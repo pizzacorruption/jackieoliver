@@ -21,13 +21,41 @@
                 margin-top: .25em;
                 margin-bottom: .5em;
             }
+            nav {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                background: rgba(255, 255, 255, 0.95);
+                padding: 10px 0;
+                text-align: center;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                z-index: 100;
+            }
+            nav a {
+                margin: 0 15px;
+                text-decoration: none;
+                color: #333;
+                font-weight: 500;
+            }
+            nav a:hover {
+                color: #007acc;
+            }
+            body {
+                padding-top: 60px;
+            }
         </style> 
     </head>
     <body>
+        <nav>
+            <a href="#about">About</a>
+            <a href="#beliefs">Beliefs</a>
+            <a href="#interests">Interests</a>
+        </nav>
         <article>
             <h1>Jackie Oliver</h1>
                 <p>I like building things, learning, and helping people.</p>
-                <section>
+                <section id="about">
                     <h4> Some things about me:</h4>
                     <ul>
                         <li>I grew up in Virginia Beach, VA</li>
@@ -35,7 +63,7 @@
                         <li>I currently work at KBRA covering primarily banks and bank holding companies</li>
                     </ul>
                 </section>
-                <section>
+                <section id="beliefs">
                     <h4>Some things I believe:</h4>
                     <ul>
                         <li>Knowledge is the greatest investment</li>
@@ -52,13 +80,13 @@
                         </ul>
                     </ul>
                 </section>
-                <section>
+                <section id="interests">
                     <h4>Interests:</h4>
                     <ul>
                         <li>Philosophy, particularly that of Nozick, Plato, Hobbes, and Nietzsche</li>
                         <li>Economics, I found it gave me an excellent framework for thinking about the world in a systemic way</li>
                         <li>Art, including literature, painting, and film. My favorite movie is Barry Lyndon, and my favorite book is Journey to the End of the Night</li>
-                        <li>My major area of interest is currently AI, probably because it's an insersection of all three</li>
+                        <li>My major area of interest is currently AI, probably because it's an intersection of all three</li>
                     </ul>
                 </section>
                 <section>
