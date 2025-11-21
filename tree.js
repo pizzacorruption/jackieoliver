@@ -1,13 +1,13 @@
 import * as THREE from 'three';
 import { FontLoader } from 'three/addons/loaders/FontLoader.js';
 import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+import { initEditor, updateFreeCameraMovement, isFreeCamera } from './editor.js';
 
 console.log('Tree.js loaded!'); // Debug log
 
 let scene, camera, renderer;
 let treeGroup;
 let isTreeModeActive = false;
-let isFreeCameraMode = false;
 let isDarkMode = true; // Default to dark mode (nighttime)
 const container = document.getElementById('tree-canvas-container');
 
@@ -76,7 +76,7 @@ function init() {
     document.getElementById('tree-down').addEventListener('click', () => moveSection(1));
 
     // Edit Mode Setup
-    setupEditMode();
+    initEditor(scene, camera, renderer, textMeshes, () => isTreeModeActive);
 }
 
 // Update scene lighting based on dark/light mode
@@ -111,283 +111,7 @@ function updateSceneLighting() {
 }
 
 // Edit Mode Variables
-let isEditMode = false;
 let textMeshes = [];
-let selectedMesh = null;
-let raycaster = new THREE.Raycaster();
-let mouse = new THREE.Vector2();
-let isDragging = false;
-
-function setupEditMode() {
-    const positionDisplay = document.getElementById('position-display');
-    const positionCoords = document.getElementById('position-coords');
-
-    // Keyboard controls
-    window.addEventListener('keydown', (e) => {
-        if (!isTreeModeActive) return;
-
-        // Toggle edit mode with E key
-        if (e.key === 'e' || e.key === 'E') {
-            isEditMode = !isEditMode;
-            positionDisplay.style.display = isEditMode ? 'block' : 'none';
-
-            if (!isEditMode) {
-                // Export positions when exiting edit mode
-                exportTextPositions();
-                selectedMesh = null;
-            }
-            return;
-        }
-
-        // Only allow other controls if in edit mode and have a selected mesh
-        if (!isEditMode || !selectedMesh) return;
-
-        const moveSpeed = e.shiftKey ? 1.0 : 0.5; // Faster movement with shift for Y axis
-        let updated = false;
-
-        // Arrow keys for repositioning
-        switch (e.key) {
-            case 'ArrowLeft':
-                e.preventDefault();
-                if (e.shiftKey) {
-                    // Shift+Left: move in negative X
-                    selectedMesh.position.x -= moveSpeed;
-                } else {
-                    // Left: rotate counter-clockwise around tree
-                    const angle = Math.atan2(selectedMesh.position.z, selectedMesh.position.x);
-                    const radius = Math.sqrt(selectedMesh.position.x ** 2 + selectedMesh.position.z ** 2);
-                    const newAngle = angle + 0.1;
-                    selectedMesh.position.x = Math.cos(newAngle) * radius;
-                    selectedMesh.position.z = Math.sin(newAngle) * radius;
-                    selectedMesh.lookAt(0, selectedMesh.position.y, 0);
-                }
-                updated = true;
-                break;
-
-            case 'ArrowRight':
-                e.preventDefault();
-                if (e.shiftKey) {
-                    // Shift+Right: move in positive X
-                    selectedMesh.position.x += moveSpeed;
-                } else {
-                    // Right: rotate clockwise around tree
-                    const angle = Math.atan2(selectedMesh.position.z, selectedMesh.position.x);
-                    const radius = Math.sqrt(selectedMesh.position.x ** 2 + selectedMesh.position.z ** 2);
-                    const newAngle = angle - 0.1;
-                    selectedMesh.position.x = Math.cos(newAngle) * radius;
-                    selectedMesh.position.z = Math.sin(newAngle) * radius;
-                    selectedMesh.lookAt(0, selectedMesh.position.y, 0);
-                }
-                updated = true;
-                break;
-
-            case 'ArrowUp':
-                e.preventDefault();
-                if (e.shiftKey) {
-                    // Shift+Up: move up in Y
-                    selectedMesh.position.y += moveSpeed;
-                } else {
-                    // Up: move closer to tree (decrease radius)
-                    const angle = Math.atan2(selectedMesh.position.z, selectedMesh.position.x);
-                    const radius = Math.sqrt(selectedMesh.position.x ** 2 + selectedMesh.position.z ** 2);
-                    const newRadius = Math.max(5, radius - moveSpeed);
-                    selectedMesh.position.x = Math.cos(angle) * newRadius;
-                    selectedMesh.position.z = Math.sin(angle) * newRadius;
-                }
-                updated = true;
-                break;
-
-            case 'ArrowDown':
-                e.preventDefault();
-                if (e.shiftKey) {
-                    // Shift+Down: move down in Y
-                    selectedMesh.position.y -= moveSpeed;
-                } else {
-                    // Down: move away from tree (increase radius)
-                    const angle = Math.atan2(selectedMesh.position.z, selectedMesh.position.x);
-                    const radius = Math.sqrt(selectedMesh.position.x ** 2 + selectedMesh.position.z ** 2);
-                    const newRadius = radius + moveSpeed;
-                    selectedMesh.position.x = Math.cos(angle) * newRadius;
-                    selectedMesh.position.z = Math.sin(angle) * newRadius;
-                }
-                updated = true;
-                break;
-
-            // Mirror controls
-            case 'h':
-            case 'H':
-                e.preventDefault();
-                // Horizontal mirror (flip X scale)
-                selectedMesh.scale.x *= -1;
-                if (!selectedMesh.userData.mirrorX) {
-                    selectedMesh.userData.mirrorX = true;
-                } else {
-                    selectedMesh.userData.mirrorX = !selectedMesh.userData.mirrorX;
-                }
-                updated = true;
-                break;
-
-            case 'v':
-            case 'V':
-                e.preventDefault();
-                // Vertical mirror (flip Y scale)
-                selectedMesh.scale.y *= -1;
-                if (!selectedMesh.userData.mirrorY) {
-                    selectedMesh.userData.mirrorY = true;
-                } else {
-                    selectedMesh.userData.mirrorY = !selectedMesh.userData.mirrorY;
-                }
-                updated = true;
-                break;
-        }
-
-        // Free Camera Mode Toggle
-        if (e.key === 'f' || e.key === 'F') {
-            e.preventDefault();
-            isFreeCameraMode = !isFreeCameraMode;
-            updatePositionDisplay();
-            console.log(`Free Camera Mode: ${isFreeCameraMode ? 'ON' : 'OFF'}`);
-            return;
-        }
-
-        // Copy coordinates to clipboard
-        if (e.key === 'c' || e.key === 'C') {
-            if (selectedMesh) {
-                e.preventDefault();
-                copyCoordinatesToClipboard();
-            }
-            return;
-        }
-
-        if (updated) {
-            updatePositionDisplay();
-        }
-    });
-
-    // Mouse events for selection and dragging
-    renderer.domElement.addEventListener('mousedown', onMouseDown);
-    renderer.domElement.addEventListener('mousemove', onMouseMove);
-    renderer.domElement.addEventListener('mouseup', onMouseUp);
-
-    function onMouseDown(event) {
-        if (!isEditMode) return;
-
-        // Calculate mouse position in normalized device coordinates
-        const rect = renderer.domElement.getBoundingClientRect();
-        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-        // Raycast to find intersections
-        raycaster.setFromCamera(mouse, camera);
-        const intersects = raycaster.intersectObjects(textMeshes);
-
-        if (intersects.length > 0) {
-            selectedMesh = intersects[0].object;
-            isDragging = true;
-            renderer.domElement.style.cursor = 'grabbing';
-        }
-    }
-
-    function onMouseMove(event) {
-        if (!isEditMode || !isDragging || !selectedMesh) return;
-
-        // Calculate mouse position
-        const rect = renderer.domElement.getBoundingClientRect();
-        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-        // Create a plane at the selected mesh's Y position
-        const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -selectedMesh.position.y);
-        raycaster.setFromCamera(mouse, camera);
-
-        const intersection = new THREE.Vector3();
-        raycaster.ray.intersectPlane(plane, intersection);
-
-        if (intersection) {
-            selectedMesh.position.x = intersection.x;
-            selectedMesh.position.z = intersection.z;
-
-            // Update display
-            updatePositionDisplay();
-        }
-    }
-
-
-    function onMouseUp() {
-        if (isDragging) {
-            isDragging = false;
-            renderer.domElement.style.cursor = isEditMode ? 'grab' : 'default';
-        }
-    }
-
-    function updatePositionDisplay() {
-        if (!selectedMesh) return;
-
-        const pos = selectedMesh.position;
-        const rot = selectedMesh.rotation;
-
-        // Calculate angle from center
-        const angle = Math.atan2(pos.z, pos.x);
-        const radius = Math.sqrt(pos.x * pos.x + pos.z * pos.z);
-
-        const mirrorX = selectedMesh.userData.mirrorX ? 'Yes' : 'No';
-        const mirrorY = selectedMesh.userData.mirrorY ? 'Yes' : 'No';
-
-        positionCoords.innerHTML = `
-            <strong>Selected:</strong> ${selectedMesh.userData.label || 'Text'}<br>
-            <strong>X:</strong> ${pos.x.toFixed(2)}<br>
-            <strong>Y:</strong> ${pos.y.toFixed(2)}<br>
-            <strong>Z:</strong> ${pos.z.toFixed(2)}<br>
-            <strong>Angle:</strong> ${angle.toFixed(3)} rad<br>
-            <strong>Radius:</strong> ${radius.toFixed(2)}<br>
-            <strong>Mirror H:</strong> ${mirrorX} | <strong>V:</strong> ${mirrorY}<br>
-            <hr style="margin: 8px 0; border: 1px solid #444;">
-            <small>
-                <strong>Controls:</strong><br>
-                ← → : Rotate around tree<br>
-                ↑ ↓ : Move closer/farther<br>
-                Shift + ↑↓ : Move up/down<br>
-                H : Mirror horizontally<br>
-                V : Mirror vertically<br>
-                C : Copy coordinates<br>
-                F : Toggle free camera
-            </small>
-            <hr style="margin: 8px 0; border: 1px solid #444;">
-            <small>
-                <strong>Camera Mode:</strong> ${isFreeCameraMode ? '🎮 FREE' : '🎯 GUIDED'}
-            </small>
-        `;
-    }
-
-    function exportTextPositions() {
-        console.log('=== TEXT POSITIONS ===');
-        textMeshes.forEach(mesh => {
-            const pos = mesh.position;
-            const angle = Math.atan2(pos.z, pos.x);
-            console.log(`{ str: "${mesh.userData.label}", y: ${pos.y.toFixed(1)}, rot: ${angle.toFixed(3)} },`);
-        });
-        console.log('======================');
-    }
-
-    function copyCoordinatesToClipboard() {
-        if (!selectedMesh) return;
-
-        const pos = selectedMesh.position;
-        const angle = Math.atan2(pos.z, pos.x);
-        const radius = Math.sqrt(pos.x * pos.x + pos.z * pos.z);
-
-        const coordText = `{ str: "${selectedMesh.userData.label}", x: ${pos.x.toFixed(2)}, y: ${pos.y.toFixed(2)}, z: ${pos.z.toFixed(2)}, angle: ${angle.toFixed(3)}, radius: ${radius.toFixed(2)} }`;
-
-        navigator.clipboard.writeText(coordText).then(() => {
-            console.log('Coordinates copied to clipboard!');
-            console.log(coordText);
-            alert('Coordinates copied to clipboard!');
-        }).catch(err => {
-            console.error('Failed to copy coordinates:', err);
-            console.log('Coordinates:', coordText);
-        });
-    }
-}
 
 // Navigation Logic
 let currentSectionIndex = 0;
@@ -396,25 +120,13 @@ let targetScrollProgress = 0; // Start at base
 let currentScrollProgress = 0;
 
 // Free camera controls
-const freeCameraSpeed = 0.5;
-const keys = {};
-
-// Track key presses for free camera
-window.addEventListener('keydown', (e) => {
-    if (isFreeCameraMode && isTreeModeActive) {
-        keys[e.key.toLowerCase()] = true;
-    }
-});
-
-window.addEventListener('keyup', (e) => {
-    keys[e.key.toLowerCase()] = false;
-});
+// Handled in editor.js
 
 function onWheel(event) {
     if (!isTreeModeActive) return;
     event.preventDefault();
 
-    if (isFreeCameraMode) {
+    if (isFreeCamera()) {
         // In free camera mode, scroll moves camera up/down
         camera.position.y += event.deltaY * 0.05;
     } else {
@@ -620,36 +332,8 @@ function onWindowResize() {
 function updateCamera() {
     if (!isTreeModeActive) return;
 
-    if (isFreeCameraMode) {
-        // Free Camera Mode - WASD controls
-        const forward = new THREE.Vector3();
-        const right = new THREE.Vector3();
-
-        // Get camera's forward and right vectors
-        camera.getWorldDirection(forward);
-        forward.y = 0; // Keep movement horizontal
-        forward.normalize();
-
-        right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
-
-        // Apply WASD movement
-        if (keys['w']) {
-            camera.position.add(forward.multiplyScalar(freeCameraSpeed));
-        }
-        if (keys['s']) {
-            camera.position.sub(forward.multiplyScalar(freeCameraSpeed));
-        }
-        if (keys['a']) {
-            camera.position.sub(right.multiplyScalar(freeCameraSpeed));
-        }
-        if (keys['d']) {
-            camera.position.add(right.multiplyScalar(freeCameraSpeed));
-        }
-
-        // Always look at the tree center
-        const treeCenter = new THREE.Vector3(0, camera.position.y, 0);
-        camera.lookAt(treeCenter);
-
+    if (isFreeCamera()) {
+        updateFreeCameraMovement();
     } else {
         // Guided Mode - Corkscrew Camera Path
         // Smoothly interpolate current progress towards target
