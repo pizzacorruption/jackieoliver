@@ -8,6 +8,16 @@ console.log('Tree.js loaded!'); // Debug log
 let scene, camera, renderer;
 let treeGroup;
 let isTreeModeActive = false;
+let isIntroMode = true;
+let introAngle = 0;
+// Transition variables
+let isTransitioning = false;
+let transitionStartTime = 0;
+const transitionDuration = 2000;
+const transitionStartPos = new THREE.Vector3();
+const transitionStartLookAt = new THREE.Vector3(0, 40, 0);
+const transitionEndLookAt = new THREE.Vector3(0, 5, 0);
+
 let isDarkMode = true; // Default to dark mode (nighttime)
 const container = document.getElementById('tree-canvas-container');
 
@@ -17,13 +27,26 @@ let ambientLight, directionalLight;
 export function toggleTreeMode() {
     isTreeModeActive = !isTreeModeActive;
 
+    const introMsg = document.getElementById('intro-message');
+    const controls = document.getElementById('tree-controls');
+
     if (isTreeModeActive) {
         container.style.display = 'block';
-        document.body.style.overflow = 'auto'; // Keep scrolling enabled
+        document.body.style.overflow = 'hidden'; // Prevent background scrolling
         if (!scene) init();
+
+        // Reset to Intro Mode
+        isIntroMode = true;
+        isTransitioning = false;
+        introAngle = 0;
+        if (introMsg) introMsg.style.display = 'block';
+        if (controls) controls.style.display = 'none';
+
         animate();
     } else {
         container.style.display = 'none';
+        document.body.style.overflow = 'auto';
+        if (introMsg) introMsg.style.display = 'none';
     }
 }
 
@@ -72,8 +95,18 @@ function init() {
     window.addEventListener('wheel', onWheel, { passive: false }); // Enable scroll control
 
     // Button Listeners
+    // Button Listeners
     document.getElementById('tree-up').addEventListener('click', () => moveSection(1));
     document.getElementById('tree-down').addEventListener('click', () => moveSection(-1));
+
+    // Key Listener for Intro
+    window.addEventListener('keydown', (e) => {
+        if (!isTreeModeActive) return;
+        if (isIntroMode && (e.key === 'Enter' || e.key === ' ')) {
+            e.preventDefault(); // Prevent scrolling with space
+            startGuidedMode();
+        }
+    });
 
     // Edit Mode Setup
     initEditor(scene, camera, renderer, textMeshes, () => isTreeModeActive);
@@ -85,7 +118,7 @@ function updateSceneLighting() {
         // Nighttime - Totoro/SOTC Night Vibe
         const fogColor = 0x1a2b3c; // Deep midnight blue/teal
         scene.background = new THREE.Color(fogColor);
-        scene.fog = new THREE.FogExp2(fogColor, 0.02);
+        scene.fog = new THREE.FogExp2(fogColor, 0.005);
 
         // Moonlight
         ambientLight.color.setHex(0x404040);
@@ -98,7 +131,7 @@ function updateSceneLighting() {
         // Daytime - Bright, sunny atmosphere
         const skyColor = 0x87CEEB; // Sky blue
         scene.background = new THREE.Color(skyColor);
-        scene.fog = new THREE.FogExp2(0xb0d4f1, 0.015); // Light blue haze
+        scene.fog = new THREE.FogExp2(0xb0d4f1, 0.002); // Light blue haze
 
         // Sunlight
         ambientLight.color.setHex(0xffffff);
@@ -119,11 +152,30 @@ const totalSections = 5; // Welcome, About, Beliefs, Interests, Contact
 let targetScrollProgress = 0; // Start at base
 let currentScrollProgress = 0;
 
+function startGuidedMode() {
+    if (isTransitioning) return;
+    isIntroMode = false;
+    isTransitioning = true;
+    transitionStartTime = Date.now();
+    transitionStartPos.copy(camera.position);
+
+    const introMsg = document.getElementById('intro-message');
+    const controls = document.getElementById('tree-controls');
+
+    if (introMsg) introMsg.style.display = 'none';
+    if (controls) controls.style.display = 'flex';
+
+    // Reset to start
+    targetScrollProgress = 0;
+    currentScrollProgress = 0;
+}
+
 // Free camera controls
 // Handled in editor.js
 
 function onWheel(event) {
     if (!isTreeModeActive) return;
+    if (isIntroMode) return; // Disable scroll in intro mode
     event.preventDefault();
 
     if (isFreeCamera()) {
@@ -200,6 +252,9 @@ function generateTree() {
 
         height += segmentHeight;
     }
+
+    // Add massive top canopy (Laputa style)
+    addMassiveCanopy(height, leafMaterial);
 }
 
 function addColossalBranch(y, barkMat, leafMat, trunkRadius) {
@@ -237,6 +292,64 @@ function addColossalBranch(y, barkMat, leafMat, trunkRadius) {
         leaf.castShadow = true;
         leaf.receiveShadow = true;
         treeGroup.add(leaf);
+    }
+}
+
+function addMassiveCanopy(y, leafMat) {
+    const canopyGroup = new THREE.Group();
+    treeGroup.add(canopyGroup);
+
+    // Create a massive dome of leaves
+    const leafCount = 800; // Very dense
+    const canopyRadius = 45;
+    const canopyHeight = 30;
+
+    for (let i = 0; i < leafCount; i++) {
+        const leafSize = 8 + Math.random() * 12; // Large, varied leaves
+        const geometry = new THREE.IcosahedronGeometry(leafSize, 0);
+        const mesh = new THREE.Mesh(geometry, leafMat);
+
+        // Random position within a flattened sphere/dome
+        // We want a dense core and a wider spread
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1); // Uniform sphere
+        const r = Math.pow(Math.random(), 1 / 3) * canopyRadius; // Uniform volume
+
+        // Flatten the bottom, dome the top
+        let py = r * Math.cos(phi);
+        if (py < 0) py *= 0.4; // Flatten bottom
+
+        mesh.position.x = r * Math.sin(phi) * Math.cos(theta);
+        mesh.position.z = r * Math.sin(phi) * Math.sin(theta);
+        mesh.position.y = y + py;
+
+        // Lift slightly to sit on top of trunk
+        mesh.position.y += 5;
+
+        // Random rotation
+        mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        canopyGroup.add(mesh);
+    }
+
+    // Add some "hanging" vines/leaves at the bottom for that floating island feel
+    for (let i = 0; i < 50; i++) {
+        const leafSize = 4 + Math.random() * 4;
+        const geometry = new THREE.IcosahedronGeometry(leafSize, 0);
+        const mesh = new THREE.Mesh(geometry, leafMat);
+
+        const theta = Math.random() * Math.PI * 2;
+        const r = (Math.random() * 0.5 + 0.2) * canopyRadius; // Inner to mid radius
+
+        mesh.position.x = r * Math.cos(theta);
+        mesh.position.z = r * Math.sin(theta);
+        mesh.position.y = y - Math.random() * 20; // Hanging down
+
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        canopyGroup.add(mesh);
     }
 }
 
@@ -332,7 +445,37 @@ function onWindowResize() {
 function updateCamera() {
     if (!isTreeModeActive) return;
 
-    if (isFreeCamera()) {
+    if (isIntroMode) {
+        // Intro Mode - Orbiting Camera
+        introAngle += 0.001; // Slow rotation
+        const radius = 160; // Further away to see the huge top
+        const height = 200; // Higher than the canopy (which is at ~165)
+
+        camera.position.x = Math.cos(introAngle) * radius;
+        camera.position.z = Math.sin(introAngle) * radius;
+        camera.position.y = height;
+        camera.lookAt(0, 140, 0); // Look at the upper trunk/canopy
+    } else if (isTransitioning) {
+        const now = Date.now();
+        const progress = Math.min((now - transitionStartTime) / transitionDuration, 1);
+
+        // Ease out cubic
+        const t = 1 - Math.pow(1 - progress, 3);
+
+        // Target: Start of guided mode (Welcome section)
+        const targetPos = new THREE.Vector3(35, 5, 0);
+
+        camera.position.lerpVectors(transitionStartPos, targetPos, t);
+
+        const currentLookAt = new THREE.Vector3().lerpVectors(transitionStartLookAt, transitionEndLookAt, t);
+        camera.lookAt(currentLookAt);
+
+        if (progress >= 1) {
+            isTransitioning = false;
+            const controls = document.getElementById('tree-controls');
+            if (controls) controls.style.display = 'flex';
+        }
+    } else if (isFreeCamera()) {
         updateFreeCameraMovement();
     } else {
         // Guided Mode - Corkscrew Camera Path
