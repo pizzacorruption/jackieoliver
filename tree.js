@@ -514,6 +514,9 @@ function loadText() {
             mesh.position.z = item.z;
             mesh.lookAt(0, item.y, 0); // Face the trunk
 
+            // Mirror horizontally to fix reversed text
+            mesh.scale.x = -1;
+
             // Store label for edit mode
             mesh.userData.label = item.str;
             textMeshes.push(mesh);
