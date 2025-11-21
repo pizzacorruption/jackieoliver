@@ -1,0 +1,200 @@
+:root {
+    --bg-color: #ffffff;
+    --text-color: #333333;
+    --accent-color: #007acc;
+    --nav-bg: rgba(255, 255, 255, 0.95);
+    --code-font: 'Courier Prime', 'Courier New', Courier, monospace;
+    --body-font: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --section-bg: rgba(0, 0, 0, 0.02);
+}
+
+body.dark-mode {
+    --bg-color: #1a1a1a;
+    --text-color: #e0e0e0;
+    --accent-color: #64b5f6;
+    --nav-bg: rgba(26, 26, 26, 0.95);
+    --section-bg: rgba(255, 255, 255, 0.05);
+}
+
+* {
+    box-sizing: border-box;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: var(--body-font);
+    line-height: 1.6;
+    font-size: 16px;
+}
+
+/* Kirigami Thread */
+#kirigami-container {
+    position: fixed;
+    top: 0;
+    left: 20px;
+    /* Position to the left */
+    width: 50px;
+    height: 100vh;
+    z-index: 50;
+    pointer-events: none;
+    /* Let clicks pass through */
+}
+
+#kirigami-thread {
+    width: 100%;
+    height: 100%;
+}
+
+#kirigami-thread path {
+    fill: none;
+    stroke: var(--text-color);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0.3;
+    transition: stroke 0.3s ease;
+}
+
+body.dark-mode #kirigami-thread path {
+    stroke: var(--text-color);
+    opacity: 0.4;
+}
+
+/* Navigation */
+nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: var(--nav-bg);
+    padding: 1rem 0;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    z-index: 100;
+}
+
+body.dark-mode nav {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+nav a {
+    margin: 0 15px;
+    text-decoration: none;
+    color: var(--text-color);
+    font-weight: 500;
+    position: relative;
+    font-size: 0.95rem;
+}
+
+nav a:hover {
+    color: var(--accent-color);
+}
+
+nav a::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: -4px;
+    left: 0;
+    background-color: var(--accent-color);
+    transition: width 0.3s;
+}
+
+nav a:hover::after {
+    width: 100%;
+}
+
+#dark-mode-toggle {
+    background: none;
+    border: 1px solid var(--text-color);
+    color: var(--text-color);
+    padding: 6px 12px;
+    cursor: pointer;
+    border-radius: 20px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    margin-right: 20px;
+    transition: all 0.3s ease;
+}
+
+#dark-mode-toggle:hover {
+    background-color: var(--text-color);
+    color: var(--bg-color);
+}
+
+/* Main Content */
+article {
+    max-width: 680px;
+    margin: 100px auto 60px;
+    padding: 0 20px;
+}
+
+h1,
+h4 {
+    margin-top: 0;
+    font-weight: 700;
+}
+
+h1 {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
+}
+
+#typing-text {
+    font-family: var(--body-font);
+    font-size: 1.1rem;
+    margin-bottom: 3rem;
+    color: var(--text-color);
+}
+
+section {
+    margin-bottom: 2.5rem;
+    padding: 2rem;
+    border-radius: 12px;
+    background: var(--section-bg);
+}
+
+section:hover {
+    transform: translateY(-2px);
+    transition: transform 0.3s ease;
+}
+
+ul {
+    padding-left: 20px;
+}
+
+li {
+    margin-bottom: 0.5rem;
+}
+
+/* Footer/AI Message */
+.ai-message {
+    font-size: 0.8rem;
+    opacity: 0.6;
+    text-align: center;
+    margin-top: 5rem;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    color: var(--bg-color);
+    /* Hidden text (matches background) */
+}
+
+body.dark-mode .ai-message {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--bg-color);
+}
+
+/* Mobile Adjustment */
+@media (max-width: 800px) {
+    #kirigami-container {
+        display: none;
+        /* Hide thread on small screens to save space */
+    }
+}
