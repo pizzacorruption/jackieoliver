@@ -72,8 +72,8 @@ function init() {
     window.addEventListener('wheel', onWheel, { passive: false }); // Enable scroll control
 
     // Button Listeners
-    document.getElementById('tree-up').addEventListener('click', () => moveSection(-1));
-    document.getElementById('tree-down').addEventListener('click', () => moveSection(1));
+    document.getElementById('tree-up').addEventListener('click', () => moveSection(1));
+    document.getElementById('tree-down').addEventListener('click', () => moveSection(-1));
 
     // Edit Mode Setup
     initEditor(scene, camera, renderer, textMeshes, () => isTreeModeActive);
