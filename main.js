@@ -1,6 +1,23 @@
+import { toggleTreeMode } from './tree.js';
+
 // Dark Mode Toggle
 const darkModeToggle = document.getElementById('dark-mode-toggle');
+const treeModeToggle = document.getElementById('tree-mode-toggle');
 const body = document.body;
+
+// Tree Mode Listener
+if (treeModeToggle) {
+    treeModeToggle.addEventListener('click', () => {
+        console.log('Tree Mode clicked!'); // Debug log
+        toggleTreeMode();
+        // Toggle button text
+        if (treeModeToggle.textContent === 'Tree Mode') {
+            treeModeToggle.textContent = 'Exit Tree';
+        } else {
+            treeModeToggle.textContent = 'Tree Mode';
+        }
+    });
+}
 
 // Check for saved preference
 if (localStorage.getItem('darkMode') === 'enabled') {
