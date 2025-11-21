@@ -24,7 +24,18 @@
     <div id="kirigami-container">
         <svg id="kirigami-thread" width="50" height="100%"></svg>
     </div>
-    <div id="tree-canvas-container" style="display: none;"></div>
+    <div id="tree-canvas-container" style="display: none;">
+        <div id="position-display" style="display: none;">
+            <h3>Edit Mode (Press E to toggle)</h3>
+            <p>Click to select text, then use arrow keys or drag to reposition</p>
+            <p><strong>Press F</strong> for Free Camera (WASD to move)</p>
+            <div id="position-coords"></div>
+        </div>
+        <div id="tree-controls">
+            <button id="tree-up" aria-label="Previous Section">▲</button>
+            <button id="tree-down" aria-label="Next Section">▼</button>
+        </div>
+    </div>
     <nav>
         <button id="dark-mode-toggle">Dark Mode</button>
         <button id="tree-mode-toggle">Tree Mode</button>
