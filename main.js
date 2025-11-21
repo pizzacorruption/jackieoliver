@@ -1,4 +1,4 @@
-import { toggleTreeMode } from './tree.js';
+import { toggleTreeMode, setDarkMode } from './tree.js';
 
 // Dark Mode Toggle
 const darkModeToggle = document.getElementById('dark-mode-toggle');
@@ -36,12 +36,14 @@ function enableDarkMode() {
     body.classList.add('dark-mode');
     localStorage.setItem('darkMode', 'enabled');
     darkModeToggle.textContent = 'Light Mode';
+    setDarkMode(true); // Sync tree scene to nighttime
 }
 
 function disableDarkMode() {
     body.classList.remove('dark-mode');
     localStorage.setItem('darkMode', null);
     darkModeToggle.textContent = 'Dark Mode';
+    setDarkMode(false); // Sync tree scene to daytime
 }
 
 // Typewriter Effect

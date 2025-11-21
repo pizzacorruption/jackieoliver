@@ -8,7 +8,11 @@ let scene, camera, renderer;
 let treeGroup;
 let isTreeModeActive = false;
 let isFreeCameraMode = false;
+let isDarkMode = true; // Default to dark mode (nighttime)
 const container = document.getElementById('tree-canvas-container');
+
+// Lighting references for mode switching
+let ambientLight, directionalLight;
 
 export function toggleTreeMode() {
     isTreeModeActive = !isTreeModeActive;
@@ -23,12 +27,17 @@ export function toggleTreeMode() {
     }
 }
 
+// Export function to sync with dark mode toggle
+export function setDarkMode(darkModeEnabled) {
+    isDarkMode = darkModeEnabled;
+    if (scene) {
+        updateSceneLighting();
+    }
+}
+
 function init() {
-    // Scene Setup - Totoro/SOTC Night Vibe
+    // Scene Setup
     scene = new THREE.Scene();
-    const fogColor = 0x1a2b3c; // Deep midnight blue/teal
-    scene.background = new THREE.Color(fogColor);
-    scene.fog = new THREE.FogExp2(fogColor, 0.02); // Exponential fog for depth
 
     // Camera
     camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -40,14 +49,17 @@ function init() {
     renderer.shadowMap.enabled = true; // Enable shadows
     container.appendChild(renderer.domElement);
 
-    // Lighting - Moonlight
-    const ambientLight = new THREE.AmbientLight(0x404040, 0.5); // Soft dim light
+    // Create lights (will be configured by updateSceneLighting)
+    ambientLight = new THREE.AmbientLight(0x404040, 0.5);
     scene.add(ambientLight);
 
-    const moonLight = new THREE.DirectionalLight(0xaaccff, 1.5); // Cool blue moonlight
-    moonLight.position.set(50, 100, 50);
-    moonLight.castShadow = true;
-    scene.add(moonLight);
+    directionalLight = new THREE.DirectionalLight(0xaaccff, 1.5);
+    directionalLight.position.set(50, 100, 50);
+    directionalLight.castShadow = true;
+    scene.add(directionalLight);
+
+    // Set initial lighting based on mode
+    updateSceneLighting();
 
     // Generate Colossal Tree
     generateTree();
@@ -65,6 +77,37 @@ function init() {
 
     // Edit Mode Setup
     setupEditMode();
+}
+
+// Update scene lighting based on dark/light mode
+function updateSceneLighting() {
+    if (isDarkMode) {
+        // Nighttime - Totoro/SOTC Night Vibe
+        const fogColor = 0x1a2b3c; // Deep midnight blue/teal
+        scene.background = new THREE.Color(fogColor);
+        scene.fog = new THREE.FogExp2(fogColor, 0.02);
+
+        // Moonlight
+        ambientLight.color.setHex(0x404040);
+        ambientLight.intensity = 0.5;
+
+        directionalLight.color.setHex(0xaaccff); // Cool blue moonlight
+        directionalLight.intensity = 1.5;
+        directionalLight.position.set(50, 100, 50);
+    } else {
+        // Daytime - Bright, sunny atmosphere
+        const skyColor = 0x87CEEB; // Sky blue
+        scene.background = new THREE.Color(skyColor);
+        scene.fog = new THREE.FogExp2(0xb0d4f1, 0.015); // Light blue haze
+
+        // Sunlight
+        ambientLight.color.setHex(0xffffff);
+        ambientLight.intensity = 0.8; // Brighter ambient light
+
+        directionalLight.color.setHex(0xfff4e6); // Warm sunlight
+        directionalLight.intensity = 2.0; // Stronger sun
+        directionalLight.position.set(50, 100, 50);
+    }
 }
 
 // Edit Mode Variables
