@@ -6,6 +6,7 @@ let selectedMesh = null;
 let raycaster = new THREE.Raycaster();
 let mouse = new THREE.Vector2();
 let isDragging = false;
+let isRightMouseDown = false;
 const keys = {};
 
 let scene, camera, renderer, textMeshes, getIsTreeModeActive;
@@ -57,9 +58,15 @@ export function updateFreeCameraMovement() {
         camera.position.add(right.multiplyScalar(freeCameraSpeed));
     }
 
-    // Always look at the tree center
-    const treeCenter = new THREE.Vector3(0, camera.position.y, 0);
-    camera.lookAt(treeCenter);
+    // Vertical Movement (Q/E)
+    if (keys['e']) {
+        camera.position.y += freeCameraSpeed;
+    }
+    if (keys['q']) {
+        camera.position.y -= freeCameraSpeed;
+    }
+
+    // Mouse Look is handled in the mousemove listener directly updating camera.rotation
 }
 
 function setupFreeCameraListeners() {
@@ -71,6 +78,33 @@ function setupFreeCameraListeners() {
 
     window.addEventListener('keyup', (e) => {
         keys[e.key.toLowerCase()] = false;
+    });
+
+    // Mouse Look Listeners (Pointer Lock)
+    renderer.domElement.addEventListener('click', () => {
+        if (isFreeCameraMode && getIsTreeModeActive()) {
+            renderer.domElement.requestPointerLock();
+        }
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isFreeCameraMode || !getIsTreeModeActive()) return;
+
+        // Only look if pointer is locked
+        if (document.pointerLockElement !== renderer.domElement) return;
+
+        const sensitivity = 0.002;
+        const deltaX = e.movementX || e.mozMovementX || e.webkitMovementX || 0;
+        const deltaY = e.movementY || e.mozMovementY || e.webkitMovementY || 0;
+
+        camera.rotation.y -= deltaX * sensitivity;
+        camera.rotation.x -= deltaY * sensitivity;
+
+        // Clamp pitch
+        camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
+
+        // Ensure rotation order is YXZ to prevent gimbal lock issues for FPS style
+        camera.rotation.order = 'YXZ';
     });
 }
 
@@ -98,6 +132,16 @@ function setupEditMode() {
             isFreeCameraMode = !isFreeCameraMode;
             updatePositionDisplay();
             console.log(`Free Camera Mode: ${isFreeCameraMode ? 'ON' : 'OFF'}`);
+
+            if (isFreeCameraMode) {
+                // Set rotation order to prevent gimbal lock
+                camera.rotation.order = 'YXZ';
+                // Reset pitch/yaw from current quaternion to avoid jumps
+                const euler = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ');
+                camera.rotation.copy(euler);
+            } else {
+                document.exitPointerLock();
+            }
             return;
         }
 
