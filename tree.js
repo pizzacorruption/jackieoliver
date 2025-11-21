@@ -490,16 +490,38 @@ function loadText() {
     loader.load('https://unpkg.com/three@0.160.0/examples/fonts/helvetiker_bold.typeface.json', function (font) {
 
         const textMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const detailMaterial = new THREE.MeshBasicMaterial({ color: 0xcccccc }); // Slightly dimmer for detail text
 
         const texts = [
-            { str: "Welcome", x: 18.00, y: 5.00, z: 0.00 },
-            { str: "About Me", x: -15.79, y: 29.00, z: 0.20 },
-            { str: "Beliefs", x: 16.73, y: 55.00, z: 0.36 },
-            { str: "Interests", x: -17.77, y: 79.00, z: -0.03 },
-            { str: "Contact", x: 18.00, y: 104.00, z: 0.00 }
+            {
+                str: "Welcome",
+                x: 18.00, y: 5.00, z: 0.00,
+                detail: "I like building things, learning, and helping people."
+            },
+            {
+                str: "About Me",
+                x: -15.79, y: 29.00, z: 0.20,
+                detail: "UVA grad working at Haptica Sensorics, giving machines a sense of touch."
+            },
+            {
+                str: "Beliefs",
+                x: 16.73, y: 55.00, z: 0.36,
+                detail: "Knowledge is the greatest investment. Human agency is rising."
+            },
+            {
+                str: "Interests",
+                x: -17.77, y: 79.00, z: -0.03,
+                detail: "Philosophy, economics, art, and AI—where all three intersect."
+            },
+            {
+                str: "Contact",
+                x: 18.00, y: 104.00, z: 0.00,
+                detail: "You can contact me at jroliver02@gmail.com"
+            }
         ];
 
         texts.forEach(item => {
+            // Main heading
             const geometry = new TextGeometry(item.str, {
                 font: font,
                 size: 2,
@@ -508,7 +530,6 @@ function loadText() {
             geometry.center();
 
             const mesh = new THREE.Mesh(geometry, textMaterial);
-            // Use exact coordinates
             mesh.position.x = item.x;
             mesh.position.y = item.y;
             mesh.position.z = item.z;
@@ -517,11 +538,32 @@ function loadText() {
             // Mirror horizontally to fix reversed text
             mesh.scale.x = -1;
 
-            // Store label for edit mode
             mesh.userData.label = item.str;
             textMeshes.push(mesh);
-
             treeGroup.add(mesh);
+
+            // Detail text (smaller, below main text)
+            if (item.detail) {
+                const detailGeometry = new TextGeometry(item.detail, {
+                    font: font,
+                    size: 0.8, // Smaller size
+                    height: 0.1,
+                });
+                detailGeometry.center();
+
+                const detailMesh = new THREE.Mesh(detailGeometry, detailMaterial);
+                detailMesh.position.x = item.x;
+                detailMesh.position.y = item.y - 2.5; // Position below main text
+                detailMesh.position.z = item.z;
+                detailMesh.lookAt(0, item.y - 2.5, 0); // Face the trunk
+
+                // Mirror horizontally to match main text
+                detailMesh.scale.x = -1;
+
+                detailMesh.userData.label = item.str + " (detail)";
+                textMeshes.push(detailMesh);
+                treeGroup.add(detailMesh);
+            }
         });
     });
 }
