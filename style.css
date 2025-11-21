@@ -122,13 +122,21 @@ body {
     z-index: 220;
     pointer-events: none;
     animation: pulse 2s infinite;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 @keyframes pulse {
-    0% { opacity: 0.5; }
-    50% { opacity: 1; }
-    100% { opacity: 0.5; }
+    0% {
+        opacity: 0.5;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0.5;
+    }
 }
 
 /* Kirigami Thread */
@@ -277,21 +285,31 @@ li {
     margin-bottom: 0.5rem;
 }
 
-/* Footer/AI Message */
-.ai-message {
-    font-size: 0.8rem;
-    opacity: 0.6;
+/* Procedural Message */
+.procedural-message {
     text-align: center;
-    margin-top: 5rem;
-    padding-top: 2rem;
-    border-top: 1px solid rgba(0, 0, 0, 0.1);
-    color: var(--bg-color);
-    /* Hidden text (matches background) */
+    margin-top: 4rem;
+    padding: 2rem;
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
 }
 
-body.dark-mode .ai-message {
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    color: var(--bg-color);
+.procedural-message:hover {
+    opacity: 0.9;
+}
+
+.procedural-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-bottom: 0.75rem;
+    opacity: 0.5;
+}
+
+.procedural-text {
+    font-style: italic;
+    font-size: 0.95rem;
+    line-height: 1.6;
 }
 
 /* Mobile Adjustment */
