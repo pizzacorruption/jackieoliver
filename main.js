@@ -1,4 +1,4 @@
-import { toggleTreeMode, setDarkMode } from './tree.js';
+import { toggleTreeMode, setDarkMode } from './tree/index.js';
 
 // Dark Mode Toggle
 const darkModeToggle = document.getElementById('dark-mode-toggle');

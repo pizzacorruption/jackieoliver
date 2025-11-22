@@ -5,7 +5,10 @@
       "Bash(git init:*)",
       "Bash(git remote add:*)",
       "Bash(git fetch:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git -C /mnt/c/Users/jackr/Desktop/projects/jackieoliver status)"
     ],
     "deny": [],
     "ask": []
