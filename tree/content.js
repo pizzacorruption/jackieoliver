@@ -1,3 +1,15 @@
+/**
+ * tree/content.js - Text content displayed on the tree
+ *
+ * Each section has:
+ * - str: The heading text
+ * - x, y, z: 3D position (y increases going up the tree)
+ * - detail: Smaller subtitle text
+ *
+ * Positions are tuned so text faces outward from the trunk.
+ * Edit these to change what appears in tree mode.
+ */
+
 export const texts = [
     {
         str: "Welcome",

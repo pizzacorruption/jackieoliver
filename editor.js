@@ -1,16 +1,41 @@
+/**
+ * editor.js - Development tools for positioning 3D elements
+ *
+ * Press E to toggle Edit Mode:
+ * - Click to select text/objects
+ * - Arrow keys to reposition (rotate around tree, move up/down)
+ * - H/V to mirror horizontally/vertically
+ * - C to copy coordinates to clipboard
+ *
+ * Press F to toggle Free Camera Mode:
+ * - WASD to move, mouse to look (pointer lock)
+ * - Q/E for vertical movement
+ * - Scroll to move up/down
+ *
+ * These tools are for development - positions are logged to console on exit.
+ */
+
 import * as THREE from 'three';
 
+// === Edit Mode State ===
 let isEditMode = false;
-let isFreeCameraMode = false;
 let selectedMesh = null;
+let isDragging = false;
+let movementMode = 'polar'; // 'polar' (default) or 'cartesian'
+
+// === Free Camera State ===
+let isFreeCameraMode = false;
+const keys = {};  // Track pressed keys for WASD movement
+
+// === Three.js References (set by initEditor) ===
+let scene, camera, renderer, textMeshes, getIsTreeModeActive;
+
+// === DOM References ===
+let positionDisplay, positionCoords;
+
+// === Input Helpers ===
 let raycaster = new THREE.Raycaster();
 let mouse = new THREE.Vector2();
-let isDragging = false;
-let isRightMouseDown = false;
-const keys = {};
-
-let scene, camera, renderer, textMeshes, getIsTreeModeActive;
-let positionDisplay, positionCoords;
 
 export function initEditor(sceneRef, cameraRef, rendererRef, textMeshesRef, getIsTreeModeActiveRef) {
     scene = sceneRef;
@@ -22,6 +47,7 @@ export function initEditor(sceneRef, cameraRef, rendererRef, textMeshesRef, getI
     positionDisplay = document.getElementById('position-display');
     positionCoords = document.getElementById('position-coords');
 
+    console.log(`Editor initialized with ${textMeshes.length} meshes.`);
     setupEditMode();
     setupFreeCameraListeners();
 }
@@ -145,115 +171,164 @@ function setupEditMode() {
             return;
         }
 
+        // Select Moon Shortcut (M)
+        if ((e.key === 'm' || e.key === 'M')) {
+            // Auto-enable edit mode if not active
+            if (!isEditMode) {
+                isEditMode = true;
+                positionDisplay.style.display = 'block';
+            }
+
+            const moon = textMeshes.find(m => m.userData.label === "Moon");
+            if (moon) {
+                selectedMesh = moon;
+                updatePositionDisplay();
+                console.log("Moon selected");
+            } else {
+                console.warn("Moon mesh not found in textMeshes", textMeshes);
+            }
+            return;
+        }
+
+        // Toggle Movement Mode (T)
+        if ((e.key === 't' || e.key === 'T') && isEditMode) {
+            movementMode = movementMode === 'polar' ? 'cartesian' : 'polar';
+            updatePositionDisplay();
+            console.log(`Movement Mode: ${movementMode}`);
+            return;
+        }
+
         // Only allow other controls if in edit mode and have a selected mesh
         if (!isEditMode || !selectedMesh) return;
 
-        const moveSpeed = e.shiftKey ? 1.0 : 0.5; // Faster movement with shift for Y axis
+        const moveSpeed = e.shiftKey ? 2.0 : 0.5; // Faster movement with shift
         let updated = false;
 
         // Arrow keys for repositioning
-        switch (e.key) {
-            case 'ArrowLeft':
-                e.preventDefault();
-                if (e.shiftKey) {
-                    // Shift+Left: move in negative X
-                    selectedMesh.position.x -= moveSpeed;
-                } else {
-                    // Left: rotate counter-clockwise around tree
-                    const angle = Math.atan2(selectedMesh.position.z, selectedMesh.position.x);
-                    const radius = Math.sqrt(selectedMesh.position.x ** 2 + selectedMesh.position.z ** 2);
-                    const newAngle = angle + 0.1;
-                    selectedMesh.position.x = Math.cos(newAngle) * radius;
-                    selectedMesh.position.z = Math.sin(newAngle) * radius;
-                    selectedMesh.lookAt(0, selectedMesh.position.y, 0);
-                }
-                updated = true;
-                break;
-
-            case 'ArrowRight':
-                e.preventDefault();
-                if (e.shiftKey) {
-                    // Shift+Right: move in positive X
-                    selectedMesh.position.x += moveSpeed;
-                } else {
-                    // Right: rotate clockwise around tree
-                    const angle = Math.atan2(selectedMesh.position.z, selectedMesh.position.x);
-                    const radius = Math.sqrt(selectedMesh.position.x ** 2 + selectedMesh.position.z ** 2);
-                    const newAngle = angle - 0.1;
-                    selectedMesh.position.x = Math.cos(newAngle) * radius;
-                    selectedMesh.position.z = Math.sin(newAngle) * radius;
-                    selectedMesh.lookAt(0, selectedMesh.position.y, 0);
-                }
-                updated = true;
-                break;
-
-            case 'ArrowUp':
-                e.preventDefault();
-                if (e.shiftKey) {
-                    // Shift+Up: move up in Y
-                    selectedMesh.position.y += moveSpeed;
-                } else {
-                    // Up: move closer to tree (decrease radius)
-                    const angle = Math.atan2(selectedMesh.position.z, selectedMesh.position.x);
-                    const radius = Math.sqrt(selectedMesh.position.x ** 2 + selectedMesh.position.z ** 2);
-                    const newRadius = Math.max(5, radius - moveSpeed);
-                    selectedMesh.position.x = Math.cos(angle) * newRadius;
-                    selectedMesh.position.z = Math.sin(angle) * newRadius;
-                }
-                updated = true;
-                break;
-
-            case 'ArrowDown':
-                e.preventDefault();
-                if (e.shiftKey) {
-                    // Shift+Down: move down in Y
-                    selectedMesh.position.y -= moveSpeed;
-                } else {
-                    // Down: move away from tree (increase radius)
-                    const angle = Math.atan2(selectedMesh.position.z, selectedMesh.position.x);
-                    const radius = Math.sqrt(selectedMesh.position.x ** 2 + selectedMesh.position.z ** 2);
-                    const newRadius = radius + moveSpeed;
-                    selectedMesh.position.x = Math.cos(angle) * newRadius;
-                    selectedMesh.position.z = Math.sin(angle) * newRadius;
-                }
-                updated = true;
-                break;
-
-            // Mirror controls
-            case 'h':
-            case 'H':
-                e.preventDefault();
-                // Horizontal mirror (flip X scale)
-                selectedMesh.scale.x *= -1;
-                if (!selectedMesh.userData.mirrorX) {
-                    selectedMesh.userData.mirrorX = true;
-                } else {
-                    selectedMesh.userData.mirrorX = !selectedMesh.userData.mirrorX;
-                }
-                updated = true;
-                break;
-
-            case 'v':
-            case 'V':
-                e.preventDefault();
-                // Vertical mirror (flip Y scale)
-                selectedMesh.scale.y *= -1;
-                if (!selectedMesh.userData.mirrorY) {
-                    selectedMesh.userData.mirrorY = true;
-                } else {
-                    selectedMesh.userData.mirrorY = !selectedMesh.userData.mirrorY;
-                }
-                updated = true;
-                break;
-
-            // Copy coordinates to clipboard
-            case 'c':
-            case 'C':
-                if (selectedMesh) {
+        if (movementMode === 'cartesian') {
+            // === Cartesian Mode (XYZ) ===
+            switch (e.key) {
+                case 'ArrowLeft':
                     e.preventDefault();
-                    copyCoordinatesToClipboard();
-                }
-                return;
+                    selectedMesh.position.x -= moveSpeed;
+                    updated = true;
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    selectedMesh.position.x += moveSpeed;
+                    updated = true;
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    if (e.shiftKey) {
+                        selectedMesh.position.y += moveSpeed;
+                    } else {
+                        selectedMesh.position.z -= moveSpeed;
+                    }
+                    updated = true;
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    if (e.shiftKey) {
+                        selectedMesh.position.y -= moveSpeed;
+                    } else {
+                        selectedMesh.position.z += moveSpeed;
+                    }
+                    updated = true;
+                    break;
+            }
+        } else {
+            // === Polar Mode (Tree-centric) ===
+            switch (e.key) {
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    if (e.shiftKey) {
+                        // Shift+Left: move in negative X (legacy override)
+                        selectedMesh.position.x -= moveSpeed;
+                    } else {
+                        // Left: rotate counter-clockwise around tree
+                        const angle = Math.atan2(selectedMesh.position.z, selectedMesh.position.x);
+                        const radius = Math.sqrt(selectedMesh.position.x ** 2 + selectedMesh.position.z ** 2);
+                        const newAngle = angle + 0.1;
+                        selectedMesh.position.x = Math.cos(newAngle) * radius;
+                        selectedMesh.position.z = Math.sin(newAngle) * radius;
+                        selectedMesh.lookAt(0, selectedMesh.position.y, 0);
+                    }
+                    updated = true;
+                    break;
+
+                case 'ArrowRight':
+                    e.preventDefault();
+                    if (e.shiftKey) {
+                        // Shift+Right: move in positive X (legacy override)
+                        selectedMesh.position.x += moveSpeed;
+                    } else {
+                        // Right: rotate clockwise around tree
+                        const angle = Math.atan2(selectedMesh.position.z, selectedMesh.position.x);
+                        const radius = Math.sqrt(selectedMesh.position.x ** 2 + selectedMesh.position.z ** 2);
+                        const newAngle = angle - 0.1;
+                        selectedMesh.position.x = Math.cos(newAngle) * radius;
+                        selectedMesh.position.z = Math.sin(newAngle) * radius;
+                        selectedMesh.lookAt(0, selectedMesh.position.y, 0);
+                    }
+                    updated = true;
+                    break;
+
+                case 'ArrowUp':
+                    e.preventDefault();
+                    if (e.shiftKey) {
+                        // Shift+Up: move up in Y
+                        selectedMesh.position.y += moveSpeed;
+                    } else {
+                        // Up: move closer to tree (decrease radius)
+                        const angle = Math.atan2(selectedMesh.position.z, selectedMesh.position.x);
+                        const radius = Math.sqrt(selectedMesh.position.x ** 2 + selectedMesh.position.z ** 2);
+                        const newRadius = Math.max(5, radius - moveSpeed);
+                        selectedMesh.position.x = Math.cos(angle) * newRadius;
+                        selectedMesh.position.z = Math.sin(angle) * newRadius;
+                    }
+                    updated = true;
+                    break;
+
+                case 'ArrowDown':
+                    e.preventDefault();
+                    if (e.shiftKey) {
+                        // Shift+Down: move down in Y
+                        selectedMesh.position.y -= moveSpeed;
+                    } else {
+                        // Down: move away from tree (increase radius)
+                        const angle = Math.atan2(selectedMesh.position.z, selectedMesh.position.x);
+                        const radius = Math.sqrt(selectedMesh.position.x ** 2 + selectedMesh.position.z ** 2);
+                        const newRadius = radius + moveSpeed;
+                        selectedMesh.position.x = Math.cos(angle) * newRadius;
+                        selectedMesh.position.z = Math.sin(angle) * newRadius;
+                    }
+                    updated = true;
+                    break;
+            }
+        }
+
+        // Mirror controls (Universal)
+        if (e.key === 'h' || e.key === 'H') {
+            e.preventDefault();
+            selectedMesh.scale.x *= -1;
+            selectedMesh.userData.mirrorX = !selectedMesh.userData.mirrorX;
+            updated = true;
+        }
+        if (e.key === 'v' || e.key === 'V') {
+            e.preventDefault();
+            selectedMesh.scale.y *= -1;
+            selectedMesh.userData.mirrorY = !selectedMesh.userData.mirrorY;
+            updated = true;
+        }
+
+        // Copy coordinates to clipboard
+        if (e.key === 'c' || e.key === 'C') {
+            if (selectedMesh) {
+                e.preventDefault();
+                copyCoordinatesToClipboard();
+            }
+            return;
         }
 
         if (updated) {
@@ -340,9 +415,16 @@ function updatePositionDisplay() {
         <hr style="margin: 8px 0; border: 1px solid #444;">
         <small>
             <strong>Controls:</strong><br>
-            ← → : Rotate around tree<br>
-            ↑ ↓ : Move closer/farther<br>
-            Shift + ↑↓ : Move up/down<br>
+            <strong>M:</strong> Select Moon<br>
+            <strong>T:</strong> Toggle Mode (${movementMode.toUpperCase()})<br>
+            ${movementMode === 'cartesian' ?
+            `← → : Move X<br>
+                 ↑ ↓ : Move Z<br>
+                 Shift + ↑↓ : Move Y` :
+            `← → : Rotate around tree<br>
+                 ↑ ↓ : Move closer/farther<br>
+                 Shift + ↑↓ : Move up/down`}
+            <br>
             H : Mirror horizontally<br>
             V : Mirror vertically<br>
             C : Copy coordinates<br>

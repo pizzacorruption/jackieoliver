@@ -1,3 +1,13 @@
+/**
+ * message.js - Procedural melancholy story generator
+ *
+ * Generates random poetic sentences in the format:
+ * "A [adjective] [noun] [verb phrase] in [context]."
+ *
+ * Click the message to generate a new one.
+ * Word lists are curated for a melancholy, reflective tone.
+ */
+
 const adjectives = [
     "weary",
     "forgotten",

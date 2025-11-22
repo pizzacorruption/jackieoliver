@@ -1,8 +1,33 @@
+/**
+ * tree/treeGeometry.js - Procedural tree mesh generation
+ *
+ * Creates a colossal low-poly tree inspired by Studio Ghibli (Totoro, Laputa).
+ *
+ * Structure:
+ * - Trunk: 40 tapered cylinder segments with random jitter for organic look
+ * - Branches: Spawn every 3rd segment above segment 8
+ * - Canopy: 800 icosahedron "leaves" in a dome shape at the top
+ * - Hanging vines: 50 leaves dangling below the canopy
+ *
+ * Also handles loading 3D text labels that float around the tree.
+ */
+
 import * as THREE from 'three';
 import { FontLoader } from 'three/addons/loaders/FontLoader.js';
 import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 import { texts } from './content.js';
 
+// === Tree Generation Constants ===
+const TRUNK_SEGMENTS = 40;
+const SEGMENT_HEIGHT = 4;
+const BASE_RADIUS = 12;
+const TAPER_FACTOR = 0.6;
+
+/**
+ * Generates the complete tree mesh (trunk, branches, canopy) and adds it to the scene.
+ * @param {THREE.Scene} scene - The scene to add the tree to.
+ * @returns {THREE.Group} The group containing the entire tree structure.
+ */
 export function generateTree(scene) {
     const treeGroup = new THREE.Group();
     scene.add(treeGroup);
@@ -19,21 +44,20 @@ export function generateTree(scene) {
         flatShading: true
     });
 
-    // Massive Trunk
+    // === Build Trunk ===
     let height = 0;
-    const trunkSegments = 40;
-    const segmentHeight = 4;
 
-    for (let i = 0; i < trunkSegments; i++) {
-        // Tapering from huge base
-        const progress = i / trunkSegments;
-        const radiusBottom = 12 * (1 - progress * 0.6); // Starts at 12, shrinks to ~5
-        const radiusTop = 12 * (1 - (progress + 0.025) * 0.6);
+    for (let i = 0; i < TRUNK_SEGMENTS; i++) {
+        // Taper from wide base to narrow top
+        const progress = i / TRUNK_SEGMENTS;
+        const radiusBottom = BASE_RADIUS * (1 - progress * TAPER_FACTOR);
+        const radiusTop = BASE_RADIUS * (1 - (progress + 0.025) * TAPER_FACTOR);
 
-        const geometry = new THREE.CylinderGeometry(radiusTop, radiusBottom, segmentHeight, 7); // 7 sides for odd/organic low-poly
+        // 7 sides creates odd/organic low-poly look
+        const geometry = new THREE.CylinderGeometry(radiusTop, radiusBottom, SEGMENT_HEIGHT, 7);
         const mesh = new THREE.Mesh(geometry, barkMaterial);
 
-        mesh.position.y = height + segmentHeight / 2;
+        mesh.position.y = height + SEGMENT_HEIGHT / 2;
         mesh.rotation.y = Math.random() * Math.PI; // Random rotation per segment
 
         // Jitter position for gnarled look
@@ -44,12 +68,12 @@ export function generateTree(scene) {
         mesh.receiveShadow = true;
         treeGroup.add(mesh);
 
-        // Massive Branches & Canopy
+        // Add branches starting from segment 8, every 3rd segment
         if (i > 8 && i % 3 === 0) {
             addColossalBranch(treeGroup, height, barkMaterial, leafMaterial, radiusTop);
         }
 
-        height += segmentHeight;
+        height += SEGMENT_HEIGHT;
     }
 
     // Add massive top canopy (Laputa style)
@@ -58,6 +82,17 @@ export function generateTree(scene) {
     return treeGroup;
 }
 
+/**
+ * Adds a branch with leaf clusters at the given height
+ */
+/**
+ * Adds a large branch with leaf clusters at the given height.
+ * @param {THREE.Group} group - The tree group to add the branch to.
+ * @param {number} y - The height (y-coordinate) on the trunk to spawn the branch.
+ * @param {THREE.Material} barkMat - Material for the branch.
+ * @param {THREE.Material} leafMat - Material for the leaves.
+ * @param {number} trunkRadius - Radius of the trunk at this height (to offset branch start).
+ */
 function addColossalBranch(group, y, barkMat, leafMat, trunkRadius) {
     const length = 15 + Math.random() * 10;
     const geometry = new THREE.CylinderGeometry(1, 3, length, 5);
@@ -96,6 +131,12 @@ function addColossalBranch(group, y, barkMat, leafMat, trunkRadius) {
     }
 }
 
+/**
+ * Creates the massive dome of leaves at the top of the tree.
+ * @param {THREE.Group} group - The tree group.
+ * @param {number} y - The height of the top of the trunk.
+ * @param {THREE.Material} leafMat - Material for the leaves.
+ */
 function addMassiveCanopy(group, y, leafMat) {
     const canopyGroup = new THREE.Group();
     group.add(canopyGroup);

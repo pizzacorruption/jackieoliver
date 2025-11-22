@@ -1,9 +1,26 @@
+/**
+ * tree/sceneSetup.js - Three.js scene initialization and lighting
+ *
+ * Sets up the WebGL renderer, camera, and lighting system.
+ * Supports two lighting modes:
+ * - Dark mode: Nighttime atmosphere with moonlight (blue tones, visible moon)
+ * - Light mode: Daytime atmosphere with sunlight (warm tones, no moon)
+ *
+ * The PS1-style aesthetic is achieved by disabling antialiasing.
+ */
+
 import * as THREE from 'three';
 
+// === Exported Scene Objects ===
 export let scene, camera, renderer;
 export let ambientLight, directionalLight;
 export let moonMesh;
 
+/**
+ * Initializes the Three.js scene, camera, and renderer.
+ * Sets up the canvas and attaches it to the DOM.
+ * @param {HTMLElement} container - The DOM element to append the canvas to.
+ */
 export function initScene(container) {
     // Scene Setup
     scene = new THREE.Scene();
@@ -36,7 +53,8 @@ export function createMoon() {
     const material = new THREE.MeshBasicMaterial({ color: 0xffffee }); // Pale yellow/white glow
     moonMesh = new THREE.Mesh(geometry, material);
 
-    moonMesh.position.set(50, 100, 50); // Match directional light position
+    // User defined position
+    moonMesh.position.set(-20.40, 215.00, -102.51);
 
     // Add to scene
     scene.add(moonMesh);
@@ -60,7 +78,8 @@ export function updateSceneLighting(isDarkMode) {
 
         directionalLight.color.setHex(0xaaccff); // Cool blue moonlight
         directionalLight.intensity = 1.5;
-        directionalLight.position.set(50, 100, 50);
+        // Match Moon position
+        directionalLight.position.set(-20.40, 215.00, -102.51);
 
         if (moonMesh) moonMesh.visible = true;
     } else {
@@ -75,7 +94,7 @@ export function updateSceneLighting(isDarkMode) {
 
         directionalLight.color.setHex(0xfff4e6); // Warm sunlight
         directionalLight.intensity = 2.0; // Stronger sun
-        directionalLight.position.set(50, 100, 50);
+        directionalLight.position.set(50, 100, 50); // Keep original sun position
 
         if (moonMesh) moonMesh.visible = false;
     }

@@ -1,14 +1,22 @@
+/**
+ * main.js - Entry point and UI handlers for the portfolio site
+ *
+ * Handles:
+ * - Dark/light mode toggle with localStorage persistence
+ * - Tree mode button (activates 3D experience)
+ * - Typewriter animation for the intro text
+ */
+
 import { toggleTreeMode, setDarkMode } from './tree/index.js';
 
-// Dark Mode Toggle
+// === DOM Elements ===
 const darkModeToggle = document.getElementById('dark-mode-toggle');
 const treeModeToggle = document.getElementById('tree-mode-toggle');
 const body = document.body;
 
-// Tree Mode Listener
+// === Tree Mode Button ===
 if (treeModeToggle) {
     treeModeToggle.addEventListener('click', () => {
-        console.log('Tree Mode clicked!'); // Debug log
         toggleTreeMode();
         // Toggle button text
         if (treeModeToggle.textContent === 'Tree Mode') {

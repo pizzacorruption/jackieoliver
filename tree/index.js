@@ -1,17 +1,31 @@
+/**
+ * tree/index.js - Main orchestrator for the 3D tree experience
+ *
+ * Coordinates all tree mode functionality:
+ * - Toggling tree mode on/off
+ * - Initializing the 3D scene, tree geometry, and text labels
+ * - Running the animation loop
+ * - Syncing dark/light mode with the scene lighting
+ */
+
 import { initScene, updateSceneLighting, createMoon, scene, camera, renderer } from './sceneSetup.js';
 import { generateTree, loadText } from './treeGeometry.js';
 import { updateCamera, resetCameraState, startGuidedMode, moveSection, onWheel, getIsIntroMode } from './camera.js';
 import { initEditor, isFreeCamera } from '../editor.js';
 
-console.log('Tree.js (Refactored) loaded!'); // Debug log
-
+// State
 let isTreeModeActive = false;
-let isDarkMode = document.body.classList.contains('dark-mode'); // Check current mode
+let isDarkMode = document.body.classList.contains('dark-mode');
 const container = document.getElementById('tree-canvas-container');
 let treeGroup;
 let textMeshes = [];
 let isInitialized = false;
 
+/**
+ * Toggles the 3D tree visualization on or off.
+ * Manages the DOM elements for the intro message and controls.
+ * Starts the animation loop if activating.
+ */
 export function toggleTreeMode() {
     isTreeModeActive = !isTreeModeActive;
 
@@ -41,6 +55,10 @@ export function toggleTreeMode() {
 }
 
 // Export function to sync with dark mode toggle
+/**
+ * Updates the scene lighting to match the website's dark/light mode.
+ * @param {boolean} darkModeEnabled - True for dark mode (night), false for light mode (day).
+ */
 export function setDarkMode(darkModeEnabled) {
     isDarkMode = darkModeEnabled;
     if (scene) {
@@ -48,6 +66,10 @@ export function setDarkMode(darkModeEnabled) {
     }
 }
 
+/**
+ * Initializes the 3D scene, geometry, and event listeners.
+ * Only called once when tree mode is first activated.
+ */
 function init() {
     // Scene Setup
     initScene(container);
@@ -88,6 +110,10 @@ function init() {
     initEditor(scene, camera, renderer, textMeshes, () => isTreeModeActive);
 }
 
+/**
+ * The main animation loop.
+ * Handles camera updates and rendering.
+ */
 function animate() {
     if (!isTreeModeActive) return;
     requestAnimationFrame(animate);

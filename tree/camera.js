@@ -1,22 +1,40 @@
+/**
+ * tree/camera.js - Camera movement and navigation
+ *
+ * Three camera modes:
+ * 1. Intro Mode: Slow orbit high above the tree, waiting for user to start
+ * 2. Guided Mode: Corkscrew path up the tree, controlled by scroll/buttons
+ * 3. Free Camera: WASD movement (handled in editor.js)
+ *
+ * The tree has 5 sections at different heights (y=5 to y=104).
+ * Scrolling interpolates the camera along a spiral path around the trunk.
+ */
+
 import * as THREE from 'three';
 import { updateFreeCameraMovement } from '../editor.js';
 
-// Camera State
+// === Camera State ===
 let isIntroMode = true;
 let introAngle = 0;
+
+// Transition animation (intro -> guided)
 let isTransitioning = false;
 let transitionStartTime = 0;
-const transitionDuration = 2000;
+const TRANSITION_DURATION_MS = 2000;
 const transitionStartPos = new THREE.Vector3();
 const transitionStartLookAt = new THREE.Vector3(0, 40, 0);
 const transitionEndLookAt = new THREE.Vector3(0, 5, 0);
 
-// Navigation Logic
+// === Navigation State ===
+const TOTAL_SECTIONS = 5; // Welcome, About, Beliefs, Interests, Contact
 let currentSectionIndex = 0;
-const totalSections = 5; // Welcome, About, Beliefs, Interests, Contact
-let targetScrollProgress = 0; // Start at base
-let currentScrollProgress = 0;
+let targetScrollProgress = 0;   // Where user wants to be (0-1)
+let currentScrollProgress = 0;  // Where camera actually is (lerps toward target)
 
+/**
+ * Resets the camera state to the initial Intro Mode.
+ * Clears any transition or scroll progress.
+ */
 export function resetCameraState() {
     isIntroMode = true;
     isTransitioning = false;
@@ -26,6 +44,11 @@ export function resetCameraState() {
     currentScrollProgress = 0;
 }
 
+/**
+ * Triggers the transition from Intro Mode to Guided Mode.
+ * Moves the camera from the high orbit to the base of the tree.
+ * @param {THREE.Camera} camera - The camera object to animate.
+ */
 export function startGuidedMode(camera) {
     if (isTransitioning) return;
     isIntroMode = false;
@@ -44,6 +67,13 @@ export function startGuidedMode(camera) {
     currentScrollProgress = 0;
 }
 
+/**
+ * Updates the camera position and rotation based on the current mode.
+ * Called every frame in the animation loop.
+ * @param {THREE.Camera} camera - The camera to update.
+ * @param {boolean} isTreeModeActive - Whether the tree visualization is active.
+ * @param {function} isFreeCamera - Function returning true if free camera mode is enabled.
+ */
 export function updateCamera(camera, isTreeModeActive, isFreeCamera) {
     if (!isTreeModeActive) return;
 
@@ -59,7 +89,7 @@ export function updateCamera(camera, isTreeModeActive, isFreeCamera) {
         camera.lookAt(0, 140, 0); // Look at the upper trunk/canopy
     } else if (isTransitioning) {
         const now = Date.now();
-        const progress = Math.min((now - transitionStartTime) / transitionDuration, 1);
+        const progress = Math.min((now - transitionStartTime) / TRANSITION_DURATION_MS, 1);
 
         // Ease out cubic
         const t = 1 - Math.pow(1 - progress, 3);
@@ -115,20 +145,24 @@ export function onWheel(event, isTreeModeActive, isFreeCamera, camera) {
         targetScrollProgress = Math.max(0, Math.min(1, targetScrollProgress));
 
         // Update section index based on scroll
-        currentSectionIndex = Math.round(targetScrollProgress * (totalSections - 1));
+        currentSectionIndex = Math.round(targetScrollProgress * (TOTAL_SECTIONS - 1));
     }
 }
 
+/**
+ * Moves the guided camera to the next or previous section.
+ * @param {number} direction - +1 for next section (up), -1 for previous section (down).
+ */
 export function moveSection(direction) {
     currentSectionIndex += direction;
 
     // Clamp index
     if (currentSectionIndex < 0) currentSectionIndex = 0;
-    if (currentSectionIndex >= totalSections) currentSectionIndex = totalSections - 1;
+    if (currentSectionIndex >= TOTAL_SECTIONS) currentSectionIndex = TOTAL_SECTIONS - 1;
 
     // Calculate target progress (0.0 to 1.0)
     // 0 = Welcome (Bottom), 1 = Contact (Top)
-    targetScrollProgress = currentSectionIndex / (totalSections - 1);
+    targetScrollProgress = currentSectionIndex / (TOTAL_SECTIONS - 1);
 }
 
 export function getIsIntroMode() {
