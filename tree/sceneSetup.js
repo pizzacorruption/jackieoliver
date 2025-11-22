@@ -96,7 +96,8 @@ export function updateSceneLighting(isDarkMode) {
         directionalLight.intensity = 2.0; // Stronger sun
         directionalLight.position.set(50, 100, 50); // Keep original sun position
 
-        if (moonMesh) moonMesh.visible = false;
+        // Moon is now always visible
+        if (moonMesh) moonMesh.visible = true;
     }
 }
 
