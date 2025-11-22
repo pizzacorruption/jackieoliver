@@ -10,7 +10,7 @@
 
 import { initScene, updateSceneLighting, createMoon, scene, camera, renderer } from './sceneSetup.js';
 import { generateTree, loadText } from './treeGeometry.js';
-import { updateCamera, resetCameraState, startGuidedMode, moveSection, onWheel, getIsIntroMode } from './camera.js';
+import { updateCamera, resetCameraState, startGuidedMode, moveSection, onWheel, getIsIntroMode, onTouchStart, onTouchMove, onTouchEnd } from './camera.js';
 import { initEditor, isFreeCamera } from '../editor.js';
 
 // State
@@ -91,7 +91,12 @@ function init() {
     loadText(treeGroup, textMeshes);
 
     // Event Listeners
-    window.addEventListener('wheel', (e) => onWheel(e, isTreeModeActive, isFreeCamera, camera), { passive: false }); // Enable scroll control
+    window.addEventListener('wheel', (e) => onWheel(e, isTreeModeActive, isFreeCamera, camera), { passive: false });
+
+    // Touch event listeners for mobile navigation
+    container.addEventListener('touchstart', (e) => onTouchStart(e, isTreeModeActive), { passive: true });
+    container.addEventListener('touchmove', (e) => onTouchMove(e, isTreeModeActive), { passive: false });
+    container.addEventListener('touchend', (e) => onTouchEnd(e, isTreeModeActive), { passive: true });
 
     // Button Listeners
     document.getElementById('tree-up').addEventListener('click', () => moveSection(1));
@@ -100,11 +105,20 @@ function init() {
     // Key Listener for Intro
     window.addEventListener('keydown', (e) => {
         if (!isTreeModeActive) return;
-        if (getIsIntroMode() && (e.key === 'Enter' || e.key === ' ')) {
-            e.preventDefault(); // Prevent scrolling with space
+        if (getIsIntroMode()) {
+            e.preventDefault();
             startGuidedMode(camera);
         }
     });
+
+    // Touch Listener for Intro (mobile support)
+    container.addEventListener('touchstart', (e) => {
+        if (!isTreeModeActive) return;
+        if (getIsIntroMode()) {
+            e.preventDefault();
+            startGuidedMode(camera);
+        }
+    }, { passive: false });
 
     // Edit Mode Setup
     initEditor(scene, camera, renderer, textMeshes, () => isTreeModeActive);

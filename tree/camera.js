@@ -168,3 +168,60 @@ export function moveSection(direction) {
 export function getIsIntroMode() {
     return isIntroMode;
 }
+
+// === Touch Handling for Mobile ===
+let touchStartY = 0;
+let touchStartTime = 0;
+
+export function onTouchStart(event, isTreeModeActive) {
+    if (!isTreeModeActive) return;
+    if (isIntroMode) return;
+
+    if (event.touches.length === 1) {
+        touchStartY = event.touches[0].clientY;
+        touchStartTime = Date.now();
+    }
+}
+
+export function onTouchMove(event, isTreeModeActive) {
+    if (!isTreeModeActive) return;
+    if (isIntroMode) return;
+    event.preventDefault();
+
+    if (event.touches.length === 1) {
+        const touchY = event.touches[0].clientY;
+        const deltaY = touchStartY - touchY;
+
+        // Continuous scroll-like behavior
+        const scrollDelta = deltaY * 0.002;
+        targetScrollProgress += scrollDelta;
+        targetScrollProgress = Math.max(0, Math.min(1, targetScrollProgress));
+
+        // Update section index
+        currentSectionIndex = Math.round(targetScrollProgress * (TOTAL_SECTIONS - 1));
+
+        touchStartY = touchY;
+    }
+}
+
+export function onTouchEnd(event, isTreeModeActive) {
+    if (!isTreeModeActive) return;
+    if (isIntroMode) return;
+
+    const touchDuration = Date.now() - touchStartTime;
+
+    // Quick swipe detection for snapping to sections
+    if (touchDuration < 300) {
+        const touchEndY = event.changedTouches[0].clientY;
+        const swipeDistance = touchStartY - touchEndY;
+
+        if (Math.abs(swipeDistance) > 50) {
+            // Significant swipe - move to next/prev section
+            if (swipeDistance > 0) {
+                moveSection(1); // Swipe up = go to next section
+            } else {
+                moveSection(-1); // Swipe down = go to previous section
+            }
+        }
+    }
+}
