@@ -7,6 +7,7 @@ console.log('Tree.js loaded!'); // Debug log
 
 let scene, camera, renderer;
 let treeGroup;
+let moonMesh;
 let isTreeModeActive = false;
 let isIntroMode = true;
 let introAngle = 0;
@@ -18,7 +19,7 @@ const transitionStartPos = new THREE.Vector3();
 const transitionStartLookAt = new THREE.Vector3(0, 40, 0);
 const transitionEndLookAt = new THREE.Vector3(0, 5, 0);
 
-let isDarkMode = true; // Default to dark mode (nighttime)
+let isDarkMode = document.body.classList.contains('dark-mode'); // Check current mode
 const container = document.getElementById('tree-canvas-container');
 
 // Lighting references for mode switching
@@ -81,11 +82,17 @@ function init() {
     directionalLight.castShadow = true;
     scene.add(directionalLight);
 
+    // Sync dark mode state from the page before setting up lighting
+    isDarkMode = document.body.classList.contains('dark-mode');
+
     // Set initial lighting based on mode
     updateSceneLighting();
 
     // Generate Colossal Tree
     generateTree();
+
+    // Generate Moon
+    createMoon();
 
     // Generate Text
     loadText();
@@ -127,6 +134,8 @@ function updateSceneLighting() {
         directionalLight.color.setHex(0xaaccff); // Cool blue moonlight
         directionalLight.intensity = 1.5;
         directionalLight.position.set(50, 100, 50);
+
+        if (moonMesh) moonMesh.visible = true;
     } else {
         // Daytime - Bright, sunny atmosphere
         const skyColor = 0x87CEEB; // Sky blue
@@ -140,6 +149,8 @@ function updateSceneLighting() {
         directionalLight.color.setHex(0xfff4e6); // Warm sunlight
         directionalLight.intensity = 2.0; // Stronger sun
         directionalLight.position.set(50, 100, 50);
+
+        if (moonMesh) moonMesh.visible = false;
     }
 }
 
@@ -434,6 +445,21 @@ function loadText() {
             }
         });
     });
+}
+
+function createMoon() {
+    const geometry = new THREE.SphereGeometry(5, 32, 32);
+    const material = new THREE.MeshBasicMaterial({ color: 0xffffee }); // Pale yellow/white glow
+    moonMesh = new THREE.Mesh(geometry, material);
+
+    moonMesh.position.set(50, 100, 50); // Match directional light position
+
+    // Add to scene
+    scene.add(moonMesh);
+
+    // Add to editable meshes for manipulation
+    moonMesh.userData.label = "Moon";
+    textMeshes.push(moonMesh);
 }
 
 function onWindowResize() {
