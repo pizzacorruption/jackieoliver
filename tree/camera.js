@@ -26,7 +26,7 @@ const transitionStartLookAt = new THREE.Vector3(0, 40, 0);
 const transitionEndLookAt = new THREE.Vector3(0, 5, 0);
 
 // === Navigation State ===
-const TOTAL_SECTIONS = 5; // Welcome, About, Beliefs, Interests, Contact
+const TOTAL_SECTIONS = 6; // Where I Stand, What I Make, What I Carry, What I Believe, Find Me, Canopy View
 let currentSectionIndex = 0;
 let targetScrollProgress = 0;   // Where user wants to be (0-1)
 let currentScrollProgress = 0;  // Where camera actually is (lerps toward target)
@@ -114,17 +114,37 @@ export function updateCamera(camera, isTreeModeActive, isFreeCamera) {
         // Smoothly interpolate current progress towards target
         currentScrollProgress += (targetScrollProgress - currentScrollProgress) * 0.05;
 
-        const maxTreeHeight = 100;
-        const currentHeight = currentScrollProgress * maxTreeHeight;
+        // Two-phase height: sections 0-4 align with text, section 5 extends into canopy
+        const textSectionEnd = 4/5; // 80% of scroll = section 4 (Find Me)
+        const maxTextHeight = 104;  // y position of last text
+        const canopyHeight = 145;   // Final destination
 
-        // Corkscrew Camera Path
-        const radius = 35; // Increased for colossal tree
-        const rotations = 2;
+        let currentHeight;
+        if (currentScrollProgress <= textSectionEnd) {
+            // Sections 0-4: Linear through text positions
+            currentHeight = (currentScrollProgress / textSectionEnd) * maxTextHeight;
+        } else {
+            // Section 5: Continue up into canopy
+            const canopyProgress = (currentScrollProgress - textSectionEnd) / (1 - textSectionEnd);
+            currentHeight = maxTextHeight + (canopyProgress * (canopyHeight - maxTextHeight));
+        }
+
+        // Corkscrew Camera Path - radius shrinks as we enter canopy
+        const baseRadius = 35;
+        const canopyStart = 0.8; // Last 20% of journey enters canopy
+        let radius = baseRadius;
+        if (currentScrollProgress > canopyStart) {
+            // Shrink radius as we rise into canopy
+            const canopyProgress = (currentScrollProgress - canopyStart) / (1 - canopyStart);
+            radius = baseRadius * (1 - canopyProgress * 0.6); // Shrink to 40% of original
+        }
+
+        const rotations = 2.5; // Extra half rotation for the final section
         const angle = currentScrollProgress * Math.PI * 2 * rotations;
 
         camera.position.x = Math.cos(angle) * radius;
         camera.position.z = Math.sin(angle) * radius;
-        camera.position.y = currentHeight + 5; // Look slightly down
+        camera.position.y = currentHeight + 5;
 
         camera.lookAt(0, currentHeight + 5, 0);
     }
