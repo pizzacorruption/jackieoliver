@@ -12,28 +12,44 @@
 
 export const texts = [
     {
-        str: "Welcome",
+        str: "Where I Stand",
         x: 18.00, y: 5.00, z: 0.00,
-        detail: "I like building things, learning, and helping people."
+        detail: [
+            "Standing on the shoulders of giants.",
+            "Thousands of years of accumulated progress",
+            "made this moment possible."
+        ]
     },
     {
-        str: "About Me",
+        str: "What I Make",
         x: -15.79, y: 29.00, z: 0.20,
-        detail: "UVA grad working at Haptica Sensorics, giving machines a sense of touch."
+        detail: [
+            "I build products, models, and strategy.",
+            "Tools that extend what people can do."
+        ]
     },
     {
-        str: "Beliefs",
+        str: "What I Carry",
         x: 16.73, y: 55.00, z: 0.36,
-        detail: "Knowledge is the greatest investment. Human agency is rising."
+        detail: [
+            "What makes a good life when labor has no value?",
+            "Are we post-ideology?",
+            "How many geniuses were lost to circumstance?"
+        ]
     },
     {
-        str: "Interests",
+        str: "What I Believe",
         x: -17.77, y: 79.00, z: -0.03,
-        detail: "Philosophy, economics, art, and AI—where all three intersect."
+        detail: [
+            "Technology does not change the hardware -",
+            "it changes what hardware can accomplish.",
+            "Writing let average intelligence",
+            "accumulate across generations."
+        ]
     },
     {
-        str: "Contact",
+        str: "Find Me",
         x: 18.00, y: 104.00, z: 0.00,
-        detail: "You can contact me at jroliver02@gmail.com"
+        detail: ["jroliver02@gmail.com"]
     }
 ];

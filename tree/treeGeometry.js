@@ -224,27 +224,33 @@ export function loadText(treeGroup, textMeshes) {
             textMeshes.push(mesh);
             treeGroup.add(mesh);
 
-            // Detail text (smaller, below main text)
+            // Detail text (smaller, below main text) - supports multiline arrays
             if (item.detail) {
-                const detailGeometry = new TextGeometry(item.detail, {
-                    font: font,
-                    size: 0.8, // Smaller size
-                    height: 0.1,
+                const lines = Array.isArray(item.detail) ? item.detail : [item.detail];
+                const lineHeight = 1.4; // Spacing between lines
+
+                lines.forEach((line, index) => {
+                    const detailGeometry = new TextGeometry(line, {
+                        font: font,
+                        size: 0.8,
+                        height: 0.1,
+                    });
+                    detailGeometry.center();
+
+                    const detailMesh = new THREE.Mesh(detailGeometry, detailMaterial);
+                    const yOffset = item.y - 2.5 - (index * lineHeight);
+                    detailMesh.position.x = item.x;
+                    detailMesh.position.y = yOffset;
+                    detailMesh.position.z = item.z;
+                    detailMesh.lookAt(0, yOffset, 0); // Face the trunk
+
+                    // Mirror horizontally to match main text
+                    detailMesh.scale.x = -1;
+
+                    detailMesh.userData.label = item.str + ` (detail ${index + 1})`;
+                    textMeshes.push(detailMesh);
+                    treeGroup.add(detailMesh);
                 });
-                detailGeometry.center();
-
-                const detailMesh = new THREE.Mesh(detailGeometry, detailMaterial);
-                detailMesh.position.x = item.x;
-                detailMesh.position.y = item.y - 2.5; // Position below main text
-                detailMesh.position.z = item.z;
-                detailMesh.lookAt(0, item.y - 2.5, 0); // Face the trunk
-
-                // Mirror horizontally to match main text
-                detailMesh.scale.x = -1;
-
-                detailMesh.userData.label = item.str + " (detail)";
-                textMeshes.push(detailMesh);
-                treeGroup.add(detailMesh);
             }
         });
     });
