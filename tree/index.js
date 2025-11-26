@@ -102,12 +102,23 @@ function init() {
     document.getElementById('tree-up').addEventListener('click', () => moveSection(1));
     document.getElementById('tree-down').addEventListener('click', () => moveSection(-1));
 
-    // Key Listener for Intro
+    // Key Listener for Intro + Arrow Navigation
     window.addEventListener('keydown', (e) => {
         if (!isTreeModeActive) return;
+
         if (getIsIntroMode()) {
             e.preventDefault();
             startGuidedMode(camera);
+            return;
+        }
+
+        // Arrow key navigation in guided mode
+        if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            moveSection(1);
+        } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            moveSection(-1);
         }
     });
 

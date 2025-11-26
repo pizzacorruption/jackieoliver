@@ -114,29 +114,29 @@ export function updateCamera(camera, isTreeModeActive, isFreeCamera) {
         // Smoothly interpolate current progress towards target
         currentScrollProgress += (targetScrollProgress - currentScrollProgress) * 0.05;
 
-        // Two-phase height: sections 0-4 align with text, section 5 extends into canopy
+        // Two-phase height: sections 0-4 align with text, section 5 zooms out above canopy
         const textSectionEnd = 4/5; // 80% of scroll = section 4 (Find Me)
         const maxTextHeight = 104;  // y position of last text
-        const canopyHeight = 145;   // Final destination
+        const canopyHeight = 200;   // Final destination - way above canopy
 
         let currentHeight;
         if (currentScrollProgress <= textSectionEnd) {
             // Sections 0-4: Linear through text positions
             currentHeight = (currentScrollProgress / textSectionEnd) * maxTextHeight;
         } else {
-            // Section 5: Continue up into canopy
+            // Section 5: Rise up above canopy for wide view
             const canopyProgress = (currentScrollProgress - textSectionEnd) / (1 - textSectionEnd);
             currentHeight = maxTextHeight + (canopyProgress * (canopyHeight - maxTextHeight));
         }
 
-        // Corkscrew Camera Path - radius shrinks as we enter canopy
+        // Corkscrew Camera Path - radius EXPANDS in canopy for zoom out effect
         const baseRadius = 35;
-        const canopyStart = 0.8; // Last 20% of journey enters canopy
+        const canopyStart = 0.8; // Last 20% of journey pulls back
         let radius = baseRadius;
         if (currentScrollProgress > canopyStart) {
-            // Shrink radius as we rise into canopy
+            // Expand radius for wide "god view"
             const canopyProgress = (currentScrollProgress - canopyStart) / (1 - canopyStart);
-            radius = baseRadius * (1 - canopyProgress * 0.6); // Shrink to 40% of original
+            radius = baseRadius + (canopyProgress * 80); // Expand to 115
         }
 
         const rotations = 2.5; // Extra half rotation for the final section
@@ -146,7 +146,14 @@ export function updateCamera(camera, isTreeModeActive, isFreeCamera) {
         camera.position.z = Math.sin(angle) * radius;
         camera.position.y = currentHeight + 5;
 
-        camera.lookAt(0, currentHeight + 5, 0);
+        // In canopy section, look down at tree center; otherwise look at current height
+        if (currentScrollProgress > canopyStart) {
+            const canopyProgress = (currentScrollProgress - canopyStart) / (1 - canopyStart);
+            const lookAtY = currentHeight + 5 - (canopyProgress * 60); // Gradually look down
+            camera.lookAt(0, lookAtY, 0);
+        } else {
+            camera.lookAt(0, currentHeight + 5, 0);
+        }
     }
 }
 
