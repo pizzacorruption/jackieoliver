@@ -117,7 +117,7 @@ export function updateCamera(camera, isTreeModeActive, isFreeCamera) {
         // Two-phase height: sections 0-4 align with text, section 5 zooms out above canopy
         const textSectionEnd = 4/5; // 80% of scroll = section 4 (Find Me)
         const maxTextHeight = 104;  // y position of last text
-        const canopyHeight = 200;   // Final destination - way above canopy
+        const canopyHeight = 220;   // Final destination - way above canopy
 
         let currentHeight;
         if (currentScrollProgress <= textSectionEnd) {
@@ -136,7 +136,7 @@ export function updateCamera(camera, isTreeModeActive, isFreeCamera) {
         if (currentScrollProgress > canopyStart) {
             // Expand radius for wide "god view"
             const canopyProgress = (currentScrollProgress - canopyStart) / (1 - canopyStart);
-            radius = baseRadius + (canopyProgress * 80); // Expand to 115
+            radius = baseRadius + (canopyProgress * 115); // Expand to 150
         }
 
         const rotations = 2.5; // Extra half rotation for the final section
@@ -149,7 +149,7 @@ export function updateCamera(camera, isTreeModeActive, isFreeCamera) {
         // In canopy section, look down at tree center; otherwise look at current height
         if (currentScrollProgress > canopyStart) {
             const canopyProgress = (currentScrollProgress - canopyStart) / (1 - canopyStart);
-            const lookAtY = currentHeight + 5 - (canopyProgress * 60); // Gradually look down
+            const lookAtY = currentHeight + 5 - (canopyProgress * 40); // Gentler downward angle
             camera.lookAt(0, lookAtY, 0);
         } else {
             camera.lookAt(0, currentHeight + 5, 0);

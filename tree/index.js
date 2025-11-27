@@ -112,6 +112,9 @@ function init() {
             return;
         }
 
+        // Skip if in free camera mode (editor controls take over)
+        if (isFreeCamera()) return;
+
         // Arrow key navigation in guided mode
         if (e.key === 'ArrowUp') {
             e.preventDefault();
