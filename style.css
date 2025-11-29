@@ -212,7 +212,8 @@ nav a:hover::after {
 }
 
 #dark-mode-toggle,
-#tree-mode-toggle {
+#tree-mode-toggle,
+nav a.nav-button {
     background: none;
     border: 1px solid var(--text-color);
     color: var(--text-color);
@@ -225,8 +226,18 @@ nav a:hover::after {
     transition: all 0.3s ease;
 }
 
+nav a.nav-button {
+    text-decoration: none;
+    display: inline-block;
+}
+
+nav a.nav-button::after {
+    display: none;
+}
+
 #dark-mode-toggle:hover,
-#tree-mode-toggle:hover {
+#tree-mode-toggle:hover,
+nav a.nav-button:hover {
     background-color: var(--text-color);
     color: var(--bg-color);
 }
