@@ -229,10 +229,23 @@ nav a.nav-button {
 nav a.nav-button {
     text-decoration: none;
     display: inline-block;
+    line-height: 1.2;
+    vertical-align: middle;
+    box-sizing: border-box;
+    font-weight: 400;
+    margin: 0;
+    margin-right: 10px;
+    font-size: 0.85rem;
 }
 
 nav a.nav-button::after {
     display: none;
+}
+
+#dark-mode-toggle,
+#tree-mode-toggle {
+    line-height: 1.2;
+    vertical-align: middle;
 }
 
 #dark-mode-toggle:hover,
